@@ -2653,6 +2653,70 @@ class FirebaseAuthManager:
         except Exception as e:
             logger.error(f"Failed to delete user: {e}")
             return False
+    
+    def send_password_reset_email(self, email: str) -> Dict:
+        """Send password reset email to user"""
+        try:
+            # Get Firebase Web API key
+            api_key = st.secrets.get("firebase", {}).get("web_api_key")
+            
+            if not api_key:
+                return {'success': False, 'message': 'Firebase Web API key not configured'}
+            
+            # Firebase Password Reset API endpoint
+            url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={api_key}"
+            
+            payload = {
+                "requestType": "PASSWORD_RESET",
+                "email": email
+            }
+            
+            response = requests.post(url, json=payload)
+            
+            if response.status_code == 200:
+                return {
+                    'success': True,
+                    'message': f'Password reset email sent to {email}'
+                }
+            else:
+                error_data = response.json()
+                error_message = error_data.get('error', {}).get('message', 'Failed to send reset email')
+                # Handle common error messages
+                if 'EMAIL_NOT_FOUND' in error_message:
+                    error_message = 'No user found with this email address'
+                return {'success': False, 'message': error_message}
+                
+        except Exception as e:
+            logger.error(f"Failed to send password reset email: {e}")
+            return {'success': False, 'message': f'Error: {str(e)}'}
+    
+    def update_user_password(self, user_id: str, new_password: str) -> Dict:
+        """Admin function to update user password directly"""
+        try:
+            # Update password in Firebase Auth
+            auth.update_user(
+                user_id,
+                password=new_password
+            )
+            
+            # Log the password reset in Firestore
+            if self.db:
+                self.db.collection('users').document(user_id).update({
+                    'password_reset_at': datetime.now(),
+                    'password_reset_by': st.session_state.get('user_email', 'admin')
+                })
+            
+            return {
+                'success': True,
+                'message': 'Password updated successfully'
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to update password: {e}")
+            return {
+                'success': False,
+                'message': f'Failed to update password: {str(e)}'
+            }
 
 # Authentication UI Components
 def render_login_page():
@@ -2843,8 +2907,92 @@ def render_admin_panel():
                             st.warning("Click again to confirm deletion")
                 
                 with col3:
+                    # Get selected user's email for password reset
+                    selected_email = None
+                    for user in users_data:
+                        if user['UID'] == selected_uid:
+                            selected_email = user['Email']
+                            break
+                    
                     if st.button("📧 Reset Password"):
-                        st.info("Password reset functionality would be implemented here")
+                        st.session_state['show_reset_options'] = True
+                        st.session_state['reset_user_email'] = selected_email
+                        st.session_state['reset_user_uid'] = selected_uid
+                
+                # Password reset options (shown after button click)
+                if st.session_state.get('show_reset_options'):
+                    st.markdown("---")
+                    st.markdown("### 🔐 Password Reset Options")
+                    
+                    reset_method = st.radio(
+                        "Choose reset method:",
+                        ["Send Reset Email", "Set New Password (Admin)"],
+                        key="reset_method"
+                    )
+                    
+                    if reset_method == "Send Reset Email":
+                        st.info(f"📧 A password reset email will be sent to: {st.session_state.get('reset_user_email')}")
+                        
+                        col_a, col_b = st.columns(2)
+                        with col_a:
+                            if st.button("✉️ Send Email", type="primary"):
+                                result = auth_manager.send_password_reset_email(st.session_state.get('reset_user_email'))
+                                if result['success']:
+                                    st.success(result['message'])
+                                    st.session_state['show_reset_options'] = False
+                                    time.sleep(2)
+                                    st.rerun()
+                                else:
+                                    st.error(result['message'])
+                        
+                        with col_b:
+                            if st.button("❌ Cancel"):
+                                st.session_state['show_reset_options'] = False
+                                st.rerun()
+                    
+                    else:  # Set New Password
+                        st.warning("⚠️ Admin Override: You're setting a new password directly")
+                        
+                        with st.form("admin_password_reset_form"):
+                            new_password = st.text_input(
+                                "New Password", 
+                                type="password",
+                                help="Minimum 6 characters"
+                            )
+                            confirm_password = st.text_input(
+                                "Confirm Password", 
+                                type="password"
+                            )
+                            
+                            col_a, col_b = st.columns(2)
+                            with col_a:
+                                submit = st.form_submit_button("🔒 Update Password", type="primary")
+                            with col_b:
+                                cancel = st.form_submit_button("❌ Cancel")
+                            
+                            if submit:
+                                if not new_password:
+                                    st.error("Password is required")
+                                elif len(new_password) < 6:
+                                    st.error("Password must be at least 6 characters")
+                                elif new_password != confirm_password:
+                                    st.error("Passwords don't match")
+                                else:
+                                    result = auth_manager.update_user_password(
+                                        st.session_state.get('reset_user_uid'),
+                                        new_password
+                                    )
+                                    if result['success']:
+                                        st.success(f"✅ {result['message']}")
+                                        st.session_state['show_reset_options'] = False
+                                        time.sleep(2)
+                                        st.rerun()
+                                    else:
+                                        st.error(f"❌ {result['message']}")
+                            
+                            if cancel:
+                                st.session_state['show_reset_options'] = False
+                                st.rerun()
         else:
             st.info("No users found")
     
