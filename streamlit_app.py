@@ -2958,9 +2958,16 @@ def render_admin_panel():
                         continue
 
             if creation_dates:
-                df_dates = pd.DataFrame({'date': creation_dates})
-                # Ensure date column is datetime type
-                df_dates['date'] = pd.to_datetime(df_dates['date'])
+                # Ensure all datetimes are timezone-naive for consistent handling
+                cleaned_dates = []
+                for dt in creation_dates:
+                    if hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
+                        # Convert timezone-aware to naive UTC
+                        cleaned_dates.append(dt.replace(tzinfo=None))
+                    else:
+                        cleaned_dates.append(dt)
+                
+                df_dates = pd.DataFrame({'date': pd.to_datetime(cleaned_dates)})
                 df_dates['month'] = df_dates['date'].dt.to_period('M')
                 monthly_counts = df_dates.groupby('month').size().reset_index(name='count')
                 monthly_counts['month'] = monthly_counts['month'].astype(str)
