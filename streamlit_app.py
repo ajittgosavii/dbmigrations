@@ -2959,6 +2959,8 @@ def render_admin_panel():
 
             if creation_dates:
                 df_dates = pd.DataFrame({'date': creation_dates})
+                # Ensure date column is datetime type
+                df_dates['date'] = pd.to_datetime(df_dates['date'])
                 df_dates['month'] = df_dates['date'].dt.to_period('M')
                 monthly_counts = df_dates.groupby('month').size().reset_index(name='count')
                 monthly_counts['month'] = monthly_counts['month'].astype(str)
