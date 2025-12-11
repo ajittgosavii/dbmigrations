@@ -3199,23 +3199,48 @@ class AnthropicAIManager:
         self.client = None
         self.connected = False
         self.error_message = None
+        self.model_name = "claude-3-5-sonnet-20240620"  # Default model
 
         if self.api_key:
             try:
                 self.client = anthropic.Anthropic(api_key=self.api_key)
                 
                 if not skip_test:
-                    # Test connection with the latest model
-                    # Using Claude 3.5 Sonnet (latest stable version)
-                    test_message = self.client.messages.create(
-                        model="claude-3-5-sonnet-20241022",
-                        max_tokens=10,
-                        messages=[{"role": "user", "content": "test"}]
-                    )
+                    # Try multiple models in order of preference (newest to oldest)
+                    # This ensures compatibility with different API key access levels
+                    models_to_try = [
+                        "claude-3-5-sonnet-20240620",  # June 2024 - widely available
+                        "claude-3-sonnet-20240229",    # March 2024 - stable fallback
+                        "claude-3-haiku-20240307",     # Fast model fallback
+                    ]
+                    
+                    last_error = None
+                    for model_name in models_to_try:
+                        try:
+                            test_message = self.client.messages.create(
+                                model=model_name,
+                                max_tokens=10,
+                                messages=[{"role": "user", "content": "test"}]
+                            )
+                            self.model_name = model_name  # Store working model
+                            logger.info(f"Successfully connected using model: {model_name}")
+                            break  # Success! Exit the loop
+                        except anthropic.APIStatusError as e:
+                            last_error = e
+                            if e.status_code == 404:
+                                continue  # Try next model
+                            else:
+                                raise  # Other errors should stop trying
+                        except Exception as e:
+                            last_error = e
+                            continue  # Try next model
+                    else:
+                        # All models failed
+                        raise Exception(f"No compatible models available. Last error: {last_error}")
                 else:
                     # Just validate API key format without making a call
                     if self.api_key.startswith("sk-ant-"):
-                        pass  # Key format looks valid
+                        self.model_name = "claude-3-5-sonnet-20240620"  # Default
                     else:
                         raise ValueError("API key format appears invalid")
                 
@@ -3325,7 +3350,7 @@ class AnthropicAIManager:
             """
 
             message = self.client.messages.create(
-            model="claude-3-5-sonnet-20241022",
+            model=self.model_name,  # Use the model that was successfully tested
             max_tokens=4000,
             temperature=0.2,
             messages=[{"role": "user", "content": prompt}]
@@ -7163,6 +7188,7 @@ def render_api_status_sidebar():
     <span class="status-indicator {ai_status_class}"></span>
     <strong>Anthropic Claude AI:</strong> {ai_status_text}<br>
     <small>API Key: {'✅ Found' if has_key else '❌ Missing'} ({key_source})</small>
+    {f"<br><small style='color: #10b981;'>Model: {ai_manager.model_name}</small>" if ai_manager.connected else ""}
     {f"<br><small style='color: #ef4444;'>Error: {ai_manager.error_message}</small>" if ai_manager.error_message else ""}
     </div>
     """, unsafe_allow_html=True)
@@ -7207,13 +7233,34 @@ def render_enhanced_sidebar_controls():
                     test_key = api_key_input or st.session_state.get('anthropic_api_key') or st.secrets.get("ANTHROPIC_API_KEY")
                     if test_key:
                         client = anthropic.Anthropic(api_key=test_key)
-                        # Try with latest model
-                        response = client.messages.create(
-                            model="claude-3-5-sonnet-20241022",
-                            max_tokens=10,
-                            messages=[{"role": "user", "content": "test"}]
-                        )
-                        st.success(f"✅ Connection successful! Model: claude-3-5-sonnet-20241022")
+                        
+                        # Try multiple models (same as main connection)
+                        models_to_try = [
+                            ("claude-3-5-sonnet-20240620", "Claude 3.5 Sonnet (June 2024)"),
+                            ("claude-3-sonnet-20240229", "Claude 3 Sonnet (March 2024)"),
+                            ("claude-3-haiku-20240307", "Claude 3 Haiku (March 2024)")
+                        ]
+                        
+                        success = False
+                        for model_id, model_name in models_to_try:
+                            try:
+                                response = client.messages.create(
+                                    model=model_id,
+                                    max_tokens=10,
+                                    messages=[{"role": "user", "content": "test"}]
+                                )
+                                st.success(f"✅ Connection successful!\n\n**Model**: {model_name}\n\n**Model ID**: `{model_id}`")
+                                success = True
+                                break
+                            except anthropic.APIStatusError as e:
+                                if e.status_code == 404:
+                                    continue  # Try next model
+                                else:
+                                    raise  # Other errors should stop
+                        
+                        if not success:
+                            st.error("❌ None of the available models work with your API key")
+                            st.info("💡 Your account may need upgraded access. Contact Anthropic support.")
                     else:
                         st.error("❌ No API key found")
                 except anthropic.APIStatusError as e:
@@ -11945,7 +11992,7 @@ class AgentScalingOptimizer:
             message = await asyncio.wait_for(
                 asyncio.to_thread(
                     self.ai_manager.client.messages.create,
-                    model="claude-3-5-sonnet-20241022",
+                    model=self.ai_manager.model_name,  # Use the model that was successfully tested
                     max_tokens=4000,
                     temperature=0.2,
                     messages=[{"role": "user", "content": prompt}]
