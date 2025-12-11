@@ -20,8 +20,9 @@ botocore>=1.34.0
 scipy>=1.11.0
 
 # Optional: For Claude AI API integration (if you implement real Claude API calls)
-anthropic>=0.8.0
+ 
 requests>=2.31.0
+
 
 # Optional: For enhanced styling and UI components
 streamlit-aggrid>=0.3.4
