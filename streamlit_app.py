@@ -3183,8 +3183,19 @@ class APIStatus:
 class AnthropicAIManager:
     """Enhanced Anthropic AI manager with improved error handling and connection"""
 
-    def __init__(self, api_key: str = None):
-        self.api_key = api_key or st.secrets.get("ANTHROPIC_API_KEY")
+    def __init__(self, api_key: str = None, skip_test: bool = False):
+        # Try multiple sources for API key
+        if api_key:
+            self.api_key = api_key
+        else:
+            # Try secrets file first
+            try:
+                self.api_key = st.secrets["ANTHROPIC_API_KEY"]
+            except (KeyError, FileNotFoundError):
+                # Try environment variable
+                import os
+                self.api_key = os.environ.get("ANTHROPIC_API_KEY")
+                
         self.client = None
         self.connected = False
         self.error_message = None
@@ -3192,21 +3203,40 @@ class AnthropicAIManager:
         if self.api_key:
             try:
                 self.client = anthropic.Anthropic(api_key=self.api_key)
-                test_message = self.client.messages.create(
-                    model="claude-3-5-sonnet-20241022",
-                    max_tokens=10,
-                    messages=[{"role": "user", "content": "test"}]
-                )
+                
+                if not skip_test:
+                    # Test connection with the latest model
+                    # Using Claude 3.5 Sonnet (latest stable version)
+                    test_message = self.client.messages.create(
+                        model="claude-3-5-sonnet-20241022",
+                        max_tokens=10,
+                        messages=[{"role": "user", "content": "test"}]
+                    )
+                else:
+                    # Just validate API key format without making a call
+                    if self.api_key.startswith("sk-ant-"):
+                        pass  # Key format looks valid
+                    else:
+                        raise ValueError("API key format appears invalid")
+                
                 self.connected = True
-                logger.info("Anthropic AI client initialized and tested successfully")
+                logger.info("Anthropic AI client initialized successfully")
+            except anthropic.APIStatusError as e:
+                self.connected = False
+                self.error_message = f"API Error {e.status_code}: {e.message}"
+                logger.error(f"Anthropic API Status Error: {e.status_code} - {e.message}")
+            except anthropic.APIError as e:
+                self.connected = False
+                self.error_message = f"API Error: {str(e)}"
+                logger.error(f"Anthropic API Error: {e}")
             except Exception as e:
                 self.connected = False
-                self.error_message = str(e)
+                self.error_message = f"Error: {str(e)[:100]}"
                 logger.error(f"Failed to initialize Anthropic client: {e}")
         else:
             # This runs only when no API key is provided
             self.connected = False
-            self.error_message = "No API key provided"
+            self.error_message = "No API key provided. Please configure ANTHROPIC_API_KEY in secrets.toml or environment variable."
 
     async def analyze_migration_workload(self, config: Dict, performance_data: Dict) -> Dict:
         """Enhanced AI-powered workload analysis with detailed insights"""
@@ -6074,8 +6104,8 @@ class OnPremPerformanceAnalyzer:
 class EnhancedMigrationAnalyzer:
     """Enhanced migration analyzer with AI and AWS API integration plus FSx support"""
 
-    def __init__(self):
-        self.ai_manager = AnthropicAIManager()
+    def __init__(self, api_key: str = None):
+        self.ai_manager = AnthropicAIManager(api_key=api_key)
         self.aws_api = AWSAPIManager()
         self.os_manager = OSPerformanceManager()
         self.network_manager = EnhancedNetworkIntelligenceManager()
@@ -7104,21 +7134,36 @@ def render_enhanced_header():
     """, unsafe_allow_html=True)
 
 def render_api_status_sidebar():
-    """Enhanced API status sidebar"""
+    """Enhanced API status sidebar with debugging"""
     st.sidebar.markdown("### 🔌 System Status")
 
-    ai_manager = AnthropicAIManager()
+    # Get API key from session state if available
+    api_key = st.session_state.get('anthropic_api_key', None)
+    ai_manager = AnthropicAIManager(api_key=api_key)
     aws_api = AWSAPIManager()
 
 # Anthropic AI Status
     ai_status_class = "status-online" if ai_manager.connected else "status-offline"
     ai_status_text = "Connected" if ai_manager.connected else "Disconnected"
+    
+    # Check if API key exists
+    has_key = bool(ai_manager.api_key)
+    key_source = "Not Found"
+    if api_key:
+        key_source = "Session (UI)"
+    elif ai_manager.api_key:
+        try:
+            if st.secrets.get("ANTHROPIC_API_KEY"):
+                key_source = "Secrets File"
+        except:
+            key_source = "Environment Var"
 
     st.sidebar.markdown(f"""
     <div class="api-status-card">
     <span class="status-indicator {ai_status_class}"></span>
-    <strong>Anthropic Claude AI:</strong> {ai_status_text}
-    {f"<br><small>Error: {ai_manager.error_message[:50]}...</small>" if ai_manager.error_message else ""}
+    <strong>Anthropic Claude AI:</strong> {ai_status_text}<br>
+    <small>API Key: {'✅ Found' if has_key else '❌ Missing'} ({key_source})</small>
+    {f"<br><small style='color: #ef4444;'>Error: {ai_manager.error_message}</small>" if ai_manager.error_message else ""}
     </div>
     """, unsafe_allow_html=True)
 
@@ -7138,6 +7183,54 @@ def render_enhanced_sidebar_controls():
     st.sidebar.header("🤖 AI-Powered Migration Configuration v3.0")
 
     render_api_status_sidebar()
+    
+    # Optional API Key Configuration
+    with st.sidebar.expander("⚙️ API Configuration", expanded=False):
+        st.markdown("**Anthropic API Key**")
+        api_key_input = st.text_input(
+            "Enter API Key (optional)",
+            type="password",
+            help="If not provided, will use ANTHROPIC_API_KEY from secrets or environment",
+            key="anthropic_api_key_input"
+        )
+        if api_key_input:
+            st.session_state['anthropic_api_key'] = api_key_input
+            st.success("✅ API Key configured for this session")
+        
+        st.markdown("---")
+        st.markdown("**🔍 Troubleshooting**")
+        
+        if st.button("🧪 Test Connection", help="Test API connection without initializing full app"):
+            with st.spinner("Testing connection..."):
+                try:
+                    import anthropic
+                    test_key = api_key_input or st.session_state.get('anthropic_api_key') or st.secrets.get("ANTHROPIC_API_KEY")
+                    if test_key:
+                        client = anthropic.Anthropic(api_key=test_key)
+                        # Try with latest model
+                        response = client.messages.create(
+                            model="claude-3-5-sonnet-20241022",
+                            max_tokens=10,
+                            messages=[{"role": "user", "content": "test"}]
+                        )
+                        st.success(f"✅ Connection successful! Model: claude-3-5-sonnet-20241022")
+                    else:
+                        st.error("❌ No API key found")
+                except anthropic.APIStatusError as e:
+                    st.error(f"❌ API Status Error {e.status_code}: {e.message}")
+                    if e.status_code == 404:
+                        st.info("💡 Tip: This usually means the model is not available. Your account may need access to Claude 3.5 Sonnet.")
+                except Exception as e:
+                    st.error(f"❌ Error: {str(e)}")
+        
+        st.markdown("""
+        <small>
+        <strong>To configure permanently:</strong><br>
+        1. Create <code>.streamlit/secrets.toml</code><br>
+        2. Add: <code>ANTHROPIC_API_KEY = "sk-ant-..."</code>
+        </small>
+        """, unsafe_allow_html=True)
+    
     st.sidebar.markdown("---")
 
 # Operating System Selection
@@ -12361,8 +12454,9 @@ def main():
     if st.button("🚀 Run Enhanced AI Migration Analysis", type="primary", use_container_width=True):
         with st.spinner("🤖 Running comprehensive AI migration analysis..."):
             try:
-                # Initialize analyzer
-                analyzer = EnhancedMigrationAnalyzer()
+                # Initialize analyzer with API key from session state if available
+                api_key = st.session_state.get('anthropic_api_key', None)
+                analyzer = EnhancedMigrationAnalyzer(api_key=api_key)
                 
                 # Run comprehensive analysis
                 # Run comprehensive analysis (using a wrapper for async code)
