@@ -2720,33 +2720,88 @@ class FirebaseAuthManager:
 
 # Authentication UI Components
 def render_login_page():
-    """Render the login page"""
+    """Render an immersive, animated enterprise login experience."""
     st.markdown("""
-    <div style="text-align: center; padding: 2rem;">
-        <h1>🔐 AWS Migration Analyzer</h1>
-        <h3>Enterprise Authentication Portal</h3>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Center the login form
-    col1, col2, col3 = st.columns([1, 2, 1])
-    
-    with col2:
-        st.markdown("### 🔑 Sign In")
-        
+<style>
+#MainMenu, header[data-testid="stHeader"], [data-testid="stSidebar"], [data-testid="stToolbar"]{display:none!important;}
+.block-container{padding-top:2.2rem!important;max-width:1200px;}
+/* Animated aurora background */
+.stApp{background:#050b18;background-image:
+ radial-gradient(closest-side at 16% 20%, rgba(37,99,235,.50), transparent 70%),
+ radial-gradient(closest-side at 84% 16%, rgba(255,153,0,.34), transparent 70%),
+ radial-gradient(closest-side at 24% 84%, rgba(56,189,248,.34), transparent 70%),
+ radial-gradient(closest-side at 78% 82%, rgba(30,64,175,.42), transparent 70%);
+ background-size:200% 200%,200% 200%,200% 200%,200% 200%;animation:awsaurora 18s ease-in-out infinite;}
+@keyframes awsaurora{0%,100%{background-position:0% 0%,100% 0%,0% 100%,100% 100%;}50%{background-position:100% 50%,0% 50%,100% 0%,0% 100%;}}
+.awsorb{position:fixed;border-radius:50%;filter:blur(7px);opacity:.5;z-index:0;animation:awsfloat 13s ease-in-out infinite;}
+.o1{width:130px;height:130px;top:12%;left:7%;background:radial-gradient(circle,#38BDF8,transparent);}
+.o2{width:90px;height:90px;top:68%;left:12%;background:radial-gradient(circle,#FF9900,transparent);animation-delay:-4s;}
+.o3{width:150px;height:150px;top:20%;right:9%;background:radial-gradient(circle,#2563EB,transparent);animation-delay:-7s;}
+@keyframes awsfloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-26px);}}
+.awslogin{position:relative;z-index:2;animation:awsrise .7s cubic-bezier(.2,.8,.2,1) both;}
+@keyframes awsrise{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:none;}}
+.awseyebrow{display:inline-block;color:#7DD3FC;font-weight:700;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;padding:5px 12px;border:1px solid rgba(125,211,252,.35);border-radius:999px;background:rgba(125,211,252,.08);}
+.awstitle{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:3rem;line-height:1.06;margin:1rem 0 .55rem;background:linear-gradient(90deg,#ffffff,#7DD3FC,#FF9900,#ffffff);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:awsshimmer 7s linear infinite;}
+@keyframes awsshimmer{to{background-position:300% 0;}}
+.awssub{color:#cbd5e1;font-size:1.02rem;max-width:470px;line-height:1.6;}
+.awschips{margin-top:1.35rem;display:flex;flex-wrap:wrap;gap:.5rem;}
+.awschip{color:#e2e8f0;font-size:.82rem;font-weight:600;padding:7px 13px;border-radius:10px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);}
+.awschip b{color:#7DD3FC;}
+.awsstats{margin-top:1.7rem;display:flex;gap:2rem;}
+.awsstat .n{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.6rem;color:#fff;}
+.awsstat .l{color:#94a3b8;font-size:.76rem;}
+.awshead{color:#F1F5F9;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:1.5rem;margin:.2rem 0 .1rem;}
+.awsheadsub{color:#94A3B8;font-size:.9rem;margin-bottom:.5rem;}
+/* Glass form */
+[data-testid="stForm"]{background:rgba(255,255,255,.94);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.5);border-radius:20px;box-shadow:0 30px 70px rgba(2,8,23,.55);padding:1.8rem 1.6rem!important;}
+[data-testid="stForm"] label{color:#334155!important;font-weight:600;}
+[data-testid="stForm"] input{border-radius:10px!important;border:1px solid #dbe3ee!important;background:#fff!important;}
+[data-testid="stForm"] input:focus{border-color:#2563EB!important;box-shadow:0 0 0 3px rgba(37,99,235,.15)!important;}
+[data-testid="stFormSubmitButton"] button{width:100%;background:linear-gradient(135deg,#2563EB,#1E40AF)!important;color:#fff!important;border:none!important;border-radius:11px!important;font-weight:700!important;padding:.6rem!important;box-shadow:0 10px 22px rgba(37,99,235,.4)!important;}
+[data-testid="stFormSubmitButton"] button:hover{filter:brightness(1.07);transform:translateY(-1px);}
+.awsnote{margin-top:.9rem;padding:.7rem .85rem;border-radius:12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);color:#cbd5e1;font-size:.78rem;position:relative;z-index:2;}
+</style>
+<div class="awsorb o1"></div><div class="awsorb o2"></div><div class="awsorb o3"></div>
+""", unsafe_allow_html=True)
+
+    left, right = st.columns([1.08, 0.92], gap="large")
+
+    with left:
+        st.markdown("""
+<div class="awslogin">
+<span class="awseyebrow">AWS · Enterprise Migration Intelligence</span>
+<div class="awstitle">Database Migration<br>Analyzer AI</div>
+<div class="awssub">Assess, right-size and cost your journey to AWS — AI-powered migration analysis with real-time pricing, workload intelligence and executive-ready reporting.</div>
+<div class="awschips">
+<span class="awschip">📊 <b>Assess</b></span>
+<span class="awschip">📐 <b>Right-Size</b></span>
+<span class="awschip">💰 <b>TCO</b></span>
+<span class="awschip">🛡️ <b>Risk</b></span>
+<span class="awschip">🤖 <b>AI Insights</b></span>
+</div>
+<div class="awsstats">
+<div class="awsstat"><div class="n">6R</div><div class="l">Migration strategies</div></div>
+<div class="awsstat"><div class="n">Real-time</div><div class="l">AWS pricing</div></div>
+<div class="awsstat"><div class="n">Executive</div><div class="l">PDF reporting</div></div>
+</div>
+</div>
+""", unsafe_allow_html=True)
+
+    with right:
+        st.markdown('<div class="awslogin"><div class="awshead">🔐 Welcome back</div>'
+                    '<div class="awsheadsub">Sign in to your migration workspace</div></div>',
+                    unsafe_allow_html=True)
+
         with st.form("login_form"):
             email = st.text_input("📧 Email Address", placeholder="user@company.com")
             password = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                login_button = st.form_submit_button("🚀 Sign In", use_container_width=True)
-            
+            login_button = st.form_submit_button("🚀 Sign In", use_container_width=True)
+
             if login_button:
                 if email and password:
                     auth_manager = FirebaseAuthManager()
                     result = auth_manager.verify_user_credentials(email, password)
-                    
+
                     if result['success']:
                         # Store user info in session state
                         st.session_state['authenticated'] = True
@@ -2755,18 +2810,17 @@ def render_login_page():
                         st.session_state['user_name'] = result['display_name']
                         st.session_state['user_role'] = result['role']
                         st.session_state['login_time'] = datetime.now()
-                        
+
                         st.success(f"Welcome back, {result['display_name']}!")
                         st.rerun()
                     else:
                         st.error(f"❌ Login failed: {result['message']}")
                 else:
                     st.error("Please enter both email and password")
-        
-        # Admin section
-        st.markdown("---")
-        st.markdown("### 👤 Administrator?")
-        if st.button("🛠️ Admin Panel", use_container_width=True):
+
+        st.markdown('<div class="awsnote">🔒 <b>Secure enterprise access</b> · Protected by Firebase authentication with role-based access control</div>', unsafe_allow_html=True)
+
+        if st.button("🛠️ Administrator Panel", use_container_width=True):
             st.session_state['show_admin'] = True
             st.rerun()
 
@@ -12466,7 +12520,47 @@ def main():
     /* Add your other CSS styles here */
     </style>
     """, unsafe_allow_html=True)
-    
+
+    # ---- Enterprise design system (injected last so it governs app-wide) ----
+    st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+:root{--navy:#0B1F3A;--blue:#2563EB;--blue-dark:#1E40AF;--sky:#38BDF8;--aws:#FF9900;--ink:#0F172A;--slate:#475569;--muted:#94A3B8;--line:#E4E9F0;--canvas:#F3F6FB;}
+html,body,[class*="css"],.stMarkdown,p,span,div,label,input,button,select,textarea{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
+h1,h2,h3{font-family:'Plus Jakarta Sans','Inter',sans-serif;letter-spacing:-.01em;color:var(--ink);}
+.stApp{background:var(--canvas);}
+.block-container{padding-top:1.4rem;max-width:1500px;}
+/* Hero header */
+.main-header{background:linear-gradient(120deg,#0B1F3A 0%,#1E40AF 55%,#2563EB 100%)!important;border-radius:18px!important;box-shadow:0 14px 34px rgba(11,31,58,.30)!important;border:1px solid rgba(255,255,255,.08)!important;position:relative;overflow:hidden;}
+.main-header::after{content:"";position:absolute;inset:0;background:radial-gradient(620px 220px at 88% -30%,rgba(255,153,0,.28),transparent 62%);pointer-events:none;}
+.main-header h1{font-family:'Plus Jakarta Sans',sans-serif!important;font-weight:800!important;color:#fff!important;position:relative;}
+.main-header p{position:relative;}
+/* Buttons */
+.stButton>button,.stDownloadButton>button,[data-testid="baseButton-primary"]{background:linear-gradient(135deg,#2563EB 0%,#1E40AF 100%)!important;color:#fff!important;border:none!important;border-radius:10px!important;font-weight:600!important;box-shadow:0 6px 16px rgba(37,99,235,.26)!important;transition:transform .18s ease,box-shadow .18s ease,filter .18s ease!important;}
+.stButton>button:hover,.stDownloadButton>button:hover{transform:translateY(-2px)!important;box-shadow:0 10px 24px rgba(37,99,235,.4)!important;filter:brightness(1.06);}
+/* Tabs */
+.stTabs [data-baseweb="tab-list"]{gap:6px;background:#eaeff7;padding:6px;border-radius:12px;border:1px solid var(--line);}
+.stTabs [data-baseweb="tab"]{background:#fff;border-radius:9px;font-weight:600;color:var(--slate);box-shadow:0 1px 2px rgba(0,0,0,.04);}
+.stTabs [data-baseweb="tab"]:hover{color:var(--blue-dark);}
+.stTabs [aria-selected="true"]{background:linear-gradient(135deg,#2563EB,#1E40AF)!important;color:#fff!important;box-shadow:0 4px 12px rgba(37,99,235,.30)!important;}
+/* Metrics */
+[data-testid="stMetric"],[data-testid="metric-container"]{background:#fff;border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:14px;padding:1rem 1.1rem;box-shadow:0 1px 2px rgba(15,23,42,.04),0 6px 18px rgba(15,23,42,.05);transition:transform .15s ease,box-shadow .15s ease;}
+[data-testid="stMetric"]:hover,[data-testid="metric-container"]:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(15,23,42,.10);border-left-color:var(--aws);}
+[data-testid="stMetricValue"]{font-family:'Plus Jakarta Sans',sans-serif;color:var(--ink);}
+/* Content cards */
+.professional-card,.insight-card,.metric-card,.agent-scaling-card,.api-status-card{border-radius:14px!important;border:1px solid var(--line)!important;box-shadow:0 1px 2px rgba(15,23,42,.04),0 6px 18px rgba(15,23,42,.05)!important;}
+.professional-card,.insight-card{border-left:4px solid var(--blue)!important;}
+/* Sidebar (kept light for readability) */
+[data-testid="stSidebar"]{background:linear-gradient(180deg,#ffffff 0%,#eef3fa 100%);border-right:1px solid var(--line);}
+[data-testid="stSidebar"] h1,[data-testid="stSidebar"] h2,[data-testid="stSidebar"] h3{color:var(--ink);}
+/* Inputs / expanders / tables */
+.stTextInput input,.stNumberInput input,.stTextArea textarea,.stSelectbox div[data-baseweb="select"]>div{border-radius:9px!important;}
+[data-testid="stExpander"]{border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+[data-testid="stDataFrame"],[data-testid="stTable"]{border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+.enterprise-footer{border-radius:16px!important;}
+</style>
+""", unsafe_allow_html=True)
+
     # Check authentication
     if not check_authentication():
         # Show admin panel if requested
