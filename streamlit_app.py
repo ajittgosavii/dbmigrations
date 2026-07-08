@@ -3409,7 +3409,12 @@ class AnthropicAIManager:
             messages=[{"role": "user", "content": prompt}]
             )
 
-            ai_response = message.content[0].text
+            # Current Claude models (e.g. Sonnet 5) may return thinking blocks
+            # before the text, so content[0] is not guaranteed to be text.
+            # Concatenate only the text blocks.
+            ai_response = "".join(
+                b.text for b in message.content if getattr(b, "type", None) == "text"
+            )
             ai_analysis = self._parse_detailed_ai_response(ai_response, config, performance_data)
 
             return {
@@ -12052,7 +12057,12 @@ class AgentScalingOptimizer:
                 timeout=30.0  # 30 second timeout
             )
 
-            ai_response = message.content[0].text
+            # Current Claude models (e.g. Sonnet 5) may return thinking blocks
+            # before the text, so content[0] is not guaranteed to be text.
+            # Concatenate only the text blocks.
+            ai_response = "".join(
+                b.text for b in message.content if getattr(b, "type", None) == "text"
+            )
 
             return {
                 'ai_analysis_available': True,
