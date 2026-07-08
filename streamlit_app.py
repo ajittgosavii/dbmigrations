@@ -1719,7 +1719,7 @@ class AWSMigrationPDFReportGenerator:
         readiness_score = ai_overall.get('migration_readiness_score', 75)
         
         ai_text = f"""
-        Advanced AI analysis using Claude 3.5 Sonnet provides comprehensive migration 
+        Advanced AI analysis using Claude Sonnet 5 provides comprehensive migration
         insights with a migration readiness score of {readiness_score:.0f}/100. The AI 
         assessment evaluates technical complexity, risk factors, cost optimization 
         opportunities, and performance considerations to provide actionable recommendations.
@@ -3199,7 +3199,7 @@ class AnthropicAIManager:
         self.client = None
         self.connected = False
         self.error_message = None
-        self.model_name = "claude-3-5-sonnet-20240620"  # Default model
+        self.model_name = "claude-sonnet-5"  # Default model
 
         if self.api_key:
             try:
@@ -3209,9 +3209,9 @@ class AnthropicAIManager:
                     # Try multiple models in order of preference (newest to oldest)
                     # This ensures compatibility with different API key access levels
                     models_to_try = [
-                        "claude-3-5-sonnet-20240620",  # June 2024 - widely available
-                        "claude-3-sonnet-20240229",    # March 2024 - stable fallback
-                        "claude-3-haiku-20240307",     # Fast model fallback
+                        "claude-sonnet-5",   # Workhorse: near-Opus quality at Sonnet cost
+                        "claude-opus-4-8",   # Most capable, if Sonnet is unavailable
+                        "claude-haiku-4-5",  # Fast/cheap fallback
                     ]
                     
                     last_error = None
@@ -3240,7 +3240,7 @@ class AnthropicAIManager:
                 else:
                     # Just validate API key format without making a call
                     if self.api_key.startswith("sk-ant-"):
-                        self.model_name = "claude-3-5-sonnet-20240620"  # Default
+                        self.model_name = "claude-sonnet-5"  # Default
                     else:
                         raise ValueError("API key format appears invalid")
                 
@@ -3352,7 +3352,6 @@ class AnthropicAIManager:
             message = self.client.messages.create(
             model=self.model_name,  # Use the model that was successfully tested
             max_tokens=4000,
-            temperature=0.2,
             messages=[{"role": "user", "content": prompt}]
             )
 
@@ -7236,9 +7235,9 @@ def render_enhanced_sidebar_controls():
                         
                         # Try multiple models (same as main connection)
                         models_to_try = [
-                            ("claude-3-5-sonnet-20240620", "Claude 3.5 Sonnet (June 2024)"),
-                            ("claude-3-sonnet-20240229", "Claude 3 Sonnet (March 2024)"),
-                            ("claude-3-haiku-20240307", "Claude 3 Haiku (March 2024)")
+                            ("claude-sonnet-5", "Claude Sonnet 5"),
+                            ("claude-opus-4-8", "Claude Opus 4.8"),
+                            ("claude-haiku-4-5", "Claude Haiku 4.5")
                         ]
                         
                         success = False
@@ -7266,7 +7265,7 @@ def render_enhanced_sidebar_controls():
                 except anthropic.APIStatusError as e:
                     st.error(f"❌ API Status Error {e.status_code}: {e.message}")
                     if e.status_code == 404:
-                        st.info("💡 Tip: This usually means the model is not available. Your account may need access to Claude 3.5 Sonnet.")
+                        st.info("💡 Tip: This usually means the model is not available. Your account may need access to Claude Sonnet 5.")
                 except Exception as e:
                     st.error(f"❌ Error: {str(e)}")
         
@@ -11994,7 +11993,6 @@ class AgentScalingOptimizer:
                     self.ai_manager.client.messages.create,
                     model=self.ai_manager.model_name,  # Use the model that was successfully tested
                     max_tokens=4000,
-                    temperature=0.2,
                     messages=[{"role": "user", "content": prompt}]
                 ),
                 timeout=30.0  # 30 second timeout

@@ -20,7 +20,7 @@ boto3>=1.34.0
 botocore>=1.34.0
 
 # ⚠️ CRITICAL FIX: Anthropic AI with Proper Version
-# This fixes the 404 error - old versions don't support Claude 3.5 Sonnet
+# Current Claude models (Sonnet 5 / Opus 4.8 / Haiku 4.5) require a recent SDK
 anthropic>=0.40.0
 
 # Configuration and Data Processing
@@ -54,6 +54,6 @@ flake8>=6.0.0
 # ============================================================================
 # DEPLOYMENT NOTES:
 # - This file has been cleaned of all duplicates
-# - anthropic>=0.40.0 is critical for Claude 3.5 Sonnet support
+# - anthropic>=0.40.0 is critical for current Claude model support
 # - All version pins use >= to allow minor updates while ensuring minimums
 # ============================================================================
